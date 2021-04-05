@@ -101,8 +101,8 @@ def generate_images(
             img = PIL.Image.fromarray(img[0].cpu().numpy(), 'RGB').save(f'{outdir}/proj{idx:02d}.png')
         return
 
-    if seeds is None:
-        ctx.fail('--seeds option is required when not using --projected-w')
+    # if seeds is None:
+    #     ctx.fail('--seeds option is required when not using --projected-w')
 
     # Labels.
     label = torch.zeros([1, G.c_dim], device=device)
