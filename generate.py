@@ -38,6 +38,7 @@ def num_range(s: str) -> List[int]:
 @click.pass_context
 @click.option('--network', 'network_pkl', help='Network pickle filename', required=True)
 @click.option('--seeds', type=num_range, help='List of random seeds')
+@click.option('--total', type=int, help='total random sample')
 @click.option('--trunc', 'truncation_psi', type=float, help='Truncation psi', default=1, show_default=True)
 @click.option('--class', 'class_idx', type=int, help='Class label (unconditional if not specified)')
 @click.option('--noise-mode', help='Noise mode', type=click.Choice(['const', 'random', 'none']), default='const', show_default=True)
@@ -47,6 +48,7 @@ def generate_images(
     ctx: click.Context,
     network_pkl: str,
     seeds: Optional[List[int]],
+    total: Optional[int],
     truncation_psi: float,
     noise_mode: str,
     outdir: str,
@@ -113,13 +115,21 @@ def generate_images(
             print ('warn: --class=lbl ignored when running on an unconditional network')
 
     # Generate images.
-    for seed_idx, seed in enumerate(seeds):
-        print('Generating image for seed %d (%d/%d) ...' % (seed, seed_idx, len(seeds)))
-        z = torch.from_numpy(np.random.RandomState(seed).randn(1, G.z_dim)).to(device)
-        img = G(z, label, truncation_psi=truncation_psi, noise_mode=noise_mode)
-        img = (img.permute(0, 2, 3, 1) * 127.5 + 128).clamp(0, 255).to(torch.uint8)
-        PIL.Image.fromarray(img[0].cpu().numpy(), 'RGB').save(f'{outdir}/seed{seed:04d}.png')
+    if seeds is not None:
+        for seed_idx, seed in enumerate(seeds):
+            print('Generating image for seed %d (%d/%d) ...' % (seed, seed_idx, len(seeds)))
+            z = torch.from_numpy(np.random.RandomState(seed).randn(1, G.z_dim)).to(device)
+            img = G(z, label, truncation_psi=truncation_psi, noise_mode=noise_mode)
+            img = (img.permute(0, 2, 3, 1) * 127.5 + 128).clamp(0, 255).to(torch.uint8)
+            PIL.Image.fromarray(img[0].cpu().numpy(), 'RGB').save(f'{outdir}/seed{seed:04d}.png')
 
+    if total is not None:
+        for ind in range(total):
+            print('Generating image %d (%d/%d) ...' % (ind, ind, total))
+            z = torch.from_numpy(np.random.randn(1, G.z_dim)).to(device)
+            img = G(z, label, truncation_psi=truncation_psi, noise_mode=noise_mode)
+            img = (img.permute(0, 2, 3, 1) * 127.5 + 128).clamp(0, 255).to(torch.uint8)
+            PIL.Image.fromarray(img[0].cpu().numpy(), 'RGB').save(f'{outdir}/img_{ind:04d}.png')
 
 #----------------------------------------------------------------------------
 
